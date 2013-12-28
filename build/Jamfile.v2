@@ -1,0 +1,33 @@
+# Boost.Task Library Build Jamfile
+
+#          Copyright Oliver Kowalke 2013.
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+
+import feature ;
+import modules ;
+import toolset ;
+
+project boost/task
+    : requirements
+      <library>/boost/atomic//boost_atomic
+      <library>/boost/fiber//boost_fiber
+      <library>/boost/thread//boost_thread
+      <link>shared:<define>BOOST_TASKS_DYN_LINK=1
+      <threading>multi
+      <define>BOOST_TASKS_SOURCE
+    : usage-requirements
+      <link>shared:<define>BOOST_TASKS_DYN_LINK=1
+    : source-location ../src
+    ;
+
+lib boost_task
+    : 
+    : <link>shared:<library>../../atomic/build//boost_atomic
+      <link>shared:<library>../../asio/build//boost_asio
+      <link>shared:<library>../../fiber/build//boost_fiber
+      <link>shared:<library>../../thread/build//boost_thread
+    ;
+
+boost-install boost_task ;

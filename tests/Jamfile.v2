@@ -1,0 +1,32 @@
+# Boost.Task Library Tests Jamfile
+
+#          Copyright Oliver Kowalke 2013.
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+
+import testing ;
+
+project boost/task/test
+    : requirements
+      <target-os>freebsd:<linkflags>"-lrt"
+      <target-os>linux:<linkflags>"-lrt"
+      <toolset>pgi:<linkflags>"-lrt"
+      <library>../../test/build//boost_unit_test_framework
+      <library>/boost/fiber//boost_fiber
+      <library>/boost/system//boost_system
+      <library>/boost/thread//boost_thread
+      <link>static
+      <threading>multi
+    ;
+
+rule task-test ( source )
+{
+    return
+        [ run $(source).cpp ]
+    ;
+}
+
+test-suite tasks :
+  [ task-test test_worker ]
+;
