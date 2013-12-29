@@ -17,9 +17,8 @@
 
 #include <cstdio>
 
-int f1()
+int fn1()
 {
-    fprintf(stderr, "f1()\n");
     return 7;
 }
 
@@ -58,9 +57,9 @@ void test_id()
 void test_push()
 {
     boost::tasks::worker w( 0);
-    boost::fibers::future< int > f = w.push( boost::bind( f1) );
-    int result = f.get();
-    BOOST_CHECK_EQUAL( 7, result);
+    boost::fibers::future< int > f1 = w.push( boost::bind( fn1) );
+    int result1 = f1.get();
+    BOOST_CHECK_EQUAL( 7, result1);
 }
 
 boost::unit_test::test_suite * init_unit_test_suite( int, char* [])
@@ -68,9 +67,12 @@ boost::unit_test::test_suite * init_unit_test_suite( int, char* [])
     boost::unit_test::test_suite * test =
         BOOST_TEST_SUITE("Boost.Task: worker test suite");
 
-     test->add( BOOST_TEST_CASE( & test_move) );
-     test->add( BOOST_TEST_CASE( & test_id) );
+    test->add( BOOST_TEST_CASE( & test_move) );
+    test->add( BOOST_TEST_CASE( & test_id) );
+    for ( int i = 0; i < 5000; ++i)
+    {
      test->add( BOOST_TEST_CASE( & test_push) );
+    }
 
     return test;
 }

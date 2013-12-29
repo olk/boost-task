@@ -13,14 +13,18 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/atomic.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <boost/config.hpp>
 #include <boost/fiber/asio/round_robin.hpp>
 #include <boost/fiber/future.hpp>
 #include <boost/fiber/operations.hpp>
+#include <boost/fiber/round_robin.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/move/move.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/utility/result_of.hpp>
+
+#include <boost/task/detail/queue.hpp>
 
 #include <cstdio>
 
@@ -35,8 +39,7 @@ namespace detail {
 template< typename PT >
 void run_as_fiber( PT pt)
 {
-    fprintf(stderr, "runas_fiber()\n");
-    fibers::fiber( move( * pt) ).detach();
+    fibers::fiber( move( * pt) ).join();
 }
 
 class worker_base
@@ -51,6 +54,7 @@ private:
     atomic< std::size_t >   use_count_;
     atomic< state_t >       state_;
     asio::io_service        io_svc_;
+    queue< function< void() > > queue_;
 
     worker_base( worker_base const&); // = delete
     worker_base & operator=( worker_base const&); // = delete
@@ -62,12 +66,23 @@ protected:
 
     void start_worker_()
     {
+#if 0
         fibers::asio::round_robin rr( io_svc_);
         fibers::set_scheduling_algorithm( & rr);
+#endif
 
-        while ( ! is_closed() )
+        while ( CLOSED != state_)
         {
-            io_svc_.run(); 
+#if 0
+            io_svc_.poll();
+#endif
+            function< void() > fn;
+            if ( queue_op_status::success == queue_.try_pop( fn) )
+            {
+                fn();
+                fn.clear();
+            }
+            while ( fibers::detail::scheduler::instance()->run() );
         }
     }
 
@@ -79,6 +94,7 @@ public:
         use_count_( 0),
         state_( OPEN),
         io_svc_(),
+        queue_(),
         thrd_()
     {}
 
@@ -94,6 +110,7 @@ public:
     void close() BOOST_NOEXCEPT
     {
         state_.store( CLOSED);
+        queue_.close();
         io_svc_.stop();
     }
 
@@ -110,7 +127,8 @@ public:
 
         shared_ptr< packaged_task_t > pt( new packaged_task_t( fn) );
         future_t f( pt->get_future() );
-        io_svc_.post( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
+        //io_svc_.post( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
+        queue_.push( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
 
         return move( f);
     }
