@@ -69,7 +69,7 @@ boost::unit_test::test_suite * init_unit_test_suite( int, char* [])
 
     test->add( BOOST_TEST_CASE( & test_move) );
     test->add( BOOST_TEST_CASE( & test_id) );
-    for ( int i = 0; i < 5000; ++i)
+    for ( int i = 0; i < 50; ++i)
     {
      test->add( BOOST_TEST_CASE( & test_push) );
     }

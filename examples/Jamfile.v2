@@ -1,0 +1,29 @@
+# Boost.Task Library Examples Jamfile
+
+#          Copyright Oliver Kowalke 2013.
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+
+# For more information, see http://www.boost.org/
+
+project boost/task/example
+    : requirements
+      <target-os>freebsd:<linkflags>"-lrt"
+      <target-os>linux:<linkflags>"-lrt -lpthread"
+      <toolset>clang/<target-os>linux:<linkflags>"-lpthread"
+      <toolset>pgi:<linkflags>"-lrt"
+      <library>/boost/atomic//boost_atomic
+      <library>/boost/fiber//boost_fiber
+      <library>/boost/system//boost_system
+      <library>/boost/thread//boost_thread
+      <toolset>gcc-4.7,<segmented-stacks>on:<cxxflags>-fsplit-stack
+      <toolset>gcc-4.7,<segmented-stacks>on:<cxxflags>-DBOOST_USE_SEGMENTED_STACKS
+      <toolset>gcc-4.8,<segmented-stacks>on:<cxxflags>-fsplit-stack
+      <toolset>gcc-4.8,<segmented-stacks>on:<cxxflags>-DBOOST_USE_SEGMENTED_STACKS
+      <link>static
+      <threading>multi
+#      <define>BOOST_ASIO_ENABLE_HANDLER_TRACKING
+    ;
+
+exe worker : worker.cpp ;

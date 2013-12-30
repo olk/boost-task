@@ -39,7 +39,7 @@ namespace detail {
 template< typename PT >
 void run_as_fiber( PT pt)
 {
-    fibers::fiber( move( * pt) ).join();
+    fibers::fiber( move( * pt) ).detach();
 }
 
 class worker_base
@@ -69,13 +69,16 @@ protected:
 #if 0
         fibers::asio::round_robin rr( io_svc_);
         fibers::set_scheduling_algorithm( & rr);
+
+        while ( CLOSED != state_)
+        {
+            io_svc_.poll();
+            while ( fibers::detail::scheduler::instance()->run() );
+        }
 #endif
 
         while ( CLOSED != state_)
         {
-#if 0
-            io_svc_.poll();
-#endif
             function< void() > fn;
             if ( queue_op_status::success == queue_.try_pop( fn) )
             {
