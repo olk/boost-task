@@ -36,6 +36,4 @@
 # include <boost/config/auto_link.hpp>
 #endif
 
-}}
-
 #endif // BOOST_TASKS_DETAIL_CONFIG_H
