@@ -23,7 +23,7 @@ project boost/task
     ;
 
 lib boost_task
-    : 
+    : detail/round_robin.cpp
     : <link>shared:<library>../../atomic/build//boost_atomic
       <link>shared:<library>../../asio/build//boost_asio
       <link>shared:<library>../../fiber/build//boost_fiber

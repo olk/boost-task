@@ -13,6 +13,7 @@ project boost/task/example
       <target-os>linux:<linkflags>"-lrt -lpthread"
       <toolset>clang/<target-os>linux:<linkflags>"-lpthread"
       <toolset>pgi:<linkflags>"-lrt"
+      <library>../build//boost_task
       <library>/boost/atomic//boost_atomic
       <library>/boost/fiber//boost_fiber
       <library>/boost/system//boost_system

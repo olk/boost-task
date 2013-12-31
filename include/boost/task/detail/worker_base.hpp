@@ -15,7 +15,6 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/config.hpp>
-#include <boost/fiber/asio/round_robin.hpp>
 #include <boost/fiber/future.hpp>
 #include <boost/fiber/operations.hpp>
 #include <boost/fiber/round_robin.hpp>
@@ -25,6 +24,7 @@
 #include <boost/utility/result_of.hpp>
 
 #include <boost/task/detail/queue.hpp>
+#include <boost/task/detail/round_robin.hpp>
 
 #include <cstdio>
 
@@ -66,17 +66,16 @@ protected:
 
     void start_worker_()
     {
-#if 0
-        fibers::asio::round_robin rr( io_svc_);
+        round_robin rr( io_svc_);
         fibers::set_scheduling_algorithm( & rr);
 
         while ( CLOSED != state_)
         {
-            io_svc_.poll();
+            io_svc_.poll_one();
             while ( fibers::detail::scheduler::instance()->run() );
         }
-#endif
 
+#if 0
         while ( CLOSED != state_)
         {
             function< void() > fn;
@@ -87,6 +86,7 @@ protected:
             }
             while ( fibers::detail::scheduler::instance()->run() );
         }
+#endif
     }
 
 public:
@@ -130,8 +130,8 @@ public:
 
         shared_ptr< packaged_task_t > pt( new packaged_task_t( fn) );
         future_t f( pt->get_future() );
-        //io_svc_.post( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
-        queue_.push( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
+        io_svc_.post( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
+        //queue_.push( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
 
         return move( f);
     }
