@@ -93,6 +93,9 @@ public:
 
     fibers::detail::notify::ptr_t get_main_notifier()
     { return fibers::detail::notify::ptr_t( new fibers::detail::main_notifier() ); }
+
+    wqueue_t waiting()
+    { return wqueue_; }
 };
 
 }}}

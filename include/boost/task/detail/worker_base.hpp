@@ -15,6 +15,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/config.hpp>
+#include <boost/fiber/asio/spawn.hpp>
 #include <boost/fiber/future.hpp>
 #include <boost/fiber/operations.hpp>
 #include <boost/fiber/round_robin.hpp>
@@ -39,12 +40,63 @@ namespace detail {
 template< typename PT >
 void run_as_fiber( PT pt)
 {
+    fprintf( stderr, "before detach()\n");
     fibers::fiber( move( * pt) ).detach();
+    fprintf( stderr, "after detach()\n");
 }
 
 class worker_base
 {
 private:
+    template< typename Fn >
+    class callable
+    {
+    private:
+        typedef typename result_of< Fn() >::type    result_t;
+
+        class impl
+        {
+        private:
+            std::size_t                 use_count_;
+
+        public:
+            asio::io_service        &   io_svc;
+            Fn                          fn;
+            fibers::promise< result_t > pr;
+
+            impl( asio::io_service & io_svc_, Fn fn_,
+                  fibers::promise< result_t > & pr_) :
+                use_count_( 0),
+                io_svc( io_svc_),
+                fn( fn_),
+                pr( move( pr_) )
+            {}
+
+            friend inline void intrusive_ptr_add_ref( impl * p) BOOST_NOEXCEPT
+            { ++p->use_count_; }
+
+            friend inline void intrusive_ptr_release( impl * p)
+            { if ( 0 == --p->use_count_) delete p; }
+        };
+
+        intrusive_ptr< impl >           impl_;
+
+        void run_( fibers::asio::yield_context yield)
+        { impl_->pr.set_value( impl_->fn() ); }
+
+    public:
+        callable( asio::io_service & io_svc, Fn fn,
+                  fibers::promise< result_t > & pr) :
+            impl_( new impl( io_svc, fn, pr) )
+        {}
+
+        void operator()()
+        {
+            fibers::asio::spawn( impl_->io_svc,
+                bind( & callable::run_, this, _1) );
+        }
+    };
+
     enum state_t
     {
         OPEN = 0,
@@ -71,8 +123,12 @@ protected:
 
         while ( CLOSED != state_)
         {
-            io_svc_.poll_one();
+            io_svc_.poll();
             while ( fibers::detail::scheduler::instance()->run() );
+            if ( ! rr.waiting().empty() )
+            {
+                std::size_t size = rr.waiting().size();
+            }
         }
 
 #if 0
@@ -126,11 +182,13 @@ public:
     {
         typedef typename result_of< Fn() >::type    result_t;
         typedef fibers::future< result_t >          future_t;
-        typedef fibers::packaged_task< result_t() > packaged_task_t;
+        typedef fibers::promise< result_t >         promise_t;
 
-        shared_ptr< packaged_task_t > pt( new packaged_task_t( fn) );
-        future_t f( pt->get_future() );
-        io_svc_.post( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
+        promise_t pr;
+        future_t f( pr.get_future() );
+        callable< Fn > c( io_svc_, fn, pr);
+        io_svc_.post( c);
+        //io_svc_.post( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
         //queue_.push( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
 
         return move( f);

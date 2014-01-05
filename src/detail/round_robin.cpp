@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <memory>
 #include <utility>
 
@@ -68,12 +69,21 @@ round_robin::spawn( fibers::detail::fiber_base::ptr_t const& f)
 
 void
 round_robin::evaluate_( fibers::detail::fiber_base::ptr_t const& f) {
+    fprintf( stderr, "evaluate 1()\n");
     if ( f->is_waiting() )
+    {
+        fprintf( stderr, "evaluate 2()\n");
         wqueue_.push_back(
             schedulable(
                 f,
                 boost::asio::io_service::work( io_svc_) ) );
-    else if ( f->is_ready() ) spawn( f);
+    }
+    else if ( f->is_ready() )
+    {
+        fprintf( stderr, "evaluate 3()\n");
+        spawn( f);
+        fprintf( stderr, "evaluate 4()\n");
+    }
     else BOOST_ASSERT_MSG( false, "fiber with invalid state in ready-queue");
 }
 
