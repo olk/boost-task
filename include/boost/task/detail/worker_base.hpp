@@ -39,11 +39,7 @@ namespace detail {
 
 template< typename PT >
 void run_as_fiber( PT pt)
-{
-    fprintf( stderr, "before detach()\n");
-    fibers::fiber( move( * pt) ).detach();
-    fprintf( stderr, "after detach()\n");
-}
+{ fibers::fiber( move( * pt) ).detach(); }
 
 class worker_base
 {
@@ -118,6 +114,7 @@ protected:
 
     void start_worker_()
     {
+#if 0
         round_robin rr( io_svc_);
         fibers::set_scheduling_algorithm( & rr);
 
@@ -130,8 +127,8 @@ protected:
                 std::size_t size = rr.waiting().size();
             }
         }
+#endif
 
-#if 0
         while ( CLOSED != state_)
         {
             function< void() > fn;
@@ -142,7 +139,6 @@ protected:
             }
             while ( fibers::detail::scheduler::instance()->run() );
         }
-#endif
     }
 
 public:
@@ -182,14 +178,19 @@ public:
     {
         typedef typename result_of< Fn() >::type    result_t;
         typedef fibers::future< result_t >          future_t;
+#if 0
         typedef fibers::promise< result_t >         promise_t;
-
         promise_t pr;
         future_t f( pr.get_future() );
         callable< Fn > c( io_svc_, fn, pr);
         io_svc_.post( c);
+#endif
+        typedef fibers::packaged_task< result_t() >   packaged_task_t;
+        boost::shared_ptr< packaged_task_t > pt(
+            new packaged_task_t( fn) );
+        future_t f( pt->get_future() );
         //io_svc_.post( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
-        //queue_.push( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
+        queue_.push( bind( run_as_fiber< shared_ptr< packaged_task_t > >, pt) );
 
         return move( f);
     }
